@@ -1,6 +1,6 @@
 var initGame = function() {
-    var zoomScale = [ 2.0, 1.8, 1.62, 1.44, 1.3, 1.16, 1.05, 0.95 ];
-    var zoomIndex = 0;
+    var zoomScale = 2;
+    var zoomLevel = 0;
     var getCursorPosition = function(e, bounds) {
         var data = {};
         if (e.pageX != undefined && e.pageY != undefined) {
@@ -19,27 +19,38 @@ var initGame = function() {
     var xOff = 0;
     var yOff = 0;
 
-    var lastMousePos;
+    var mouseDown = false;
     var mouseDownHandler = function(e) {
-
+        mouseDown = true;
     };
 
+    var mouseUpHandler = function(e) {
+        mouseDown = false;
+    };
+
+    var lastMousePos;
     var mouseMoveHandler = function(e) {
         var xy = getCursorPosition(e);
-        if (lastMousePos != undefined) {
+        if (mouseDown && lastMousePos != undefined) {
             xOff += xy.x - lastMousePos.x;
             yOff += xy.y - lastMousePos.y;
         }
         lastMousePos = xy;
     };
 
-    var mouseUpHandler = function(e) {
-
-    };
-
     var mouseWheelHandler = function(e) {
-        zoomIndex += (e.deltaY > 0 ? 1 : -1);
-        zoomIndex = Math.max(0, Math.min(zoomScale.length - 1, zoomIndex));
+        var zoomChange = 1;
+        if (zoomLevel < 20 && e.deltaY > 0) {
+            zoomLevel++;
+            zoomChange = 0.9;
+        } else if (zoomLevel > 0 && e.deltaY < 0) {
+            zoomLevel--;
+            zoomChange = 1 / 0.9;
+        }
+
+        zoomScale *= zoomChange;
+        xOff = e.pageX - (e.pageX - xOff) * zoomChange;
+        yOff = e.pageY - (e.pageY - yOff) * zoomChange;
     };
 
     var sizeWindow = function() {
@@ -101,7 +112,7 @@ var initGame = function() {
         context.clearRect(0, 0, canvas.width, canvas.height);
 
         context.translate(xOff, yOff);
-        context.scale(zoomScale[zoomIndex], zoomScale[zoomIndex]);
+        context.scale(zoomScale, zoomScale);
 
         if (assetsLoaded < images.length) {
             context.font = "Calibri 12pt";
